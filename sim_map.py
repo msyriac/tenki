@@ -20,6 +20,9 @@ parser.add_argument("-D", "--direct",   action="store_true")
 parser.add_argument("-B", "--bits",     type=int, default=64)
 args = parser.parse_args()
 
+kappaname = args.ofile.replace("lensed","kappa")
+
+
 comm = mpi.COMM_WORLD
 enmap.extent_model.append(args.extent)
 shape, wcs = enmap.read_map_geometry(args.template)
@@ -39,7 +42,7 @@ for i in range(comm.rank, args.nsim, comm.size):
 		if args.beam:
 			raise NotImplementedError("Beam not supported for lensed sims yet")
 		if args.geometry == "curved":
-			m, = lensing.rand_map(shape, wcs, ps, lmax=lmax, maplmax=maplmax, seed=(seed,i), verbose=verbose, dtype=dtype)
+			m,kappa = lensing.rand_map(shape, wcs, ps, lmax=lmax, maplmax=maplmax, seed=(seed,i), verbose=verbose, dtype=dtype,output="lk")
 		else:
 			maps = enmap.rand_map((shape[0]+1,)+shape[1:], wcs, ps)
 			phi, unlensed = maps[0], maps[1:]
@@ -53,9 +56,14 @@ for i in range(comm.rank, args.nsim, comm.size):
 		else:
 			m = enmap.rand_map(shape, wcs, ps)
 
-	if args.nsim == 1:
-		if verbose: print "Writing %s" % args.ofile
-		enmap.write_map(args.ofile, m)
-	else:
+	# if args.nsim == 1:
+	# 	if verbose: print "Writing %s" % args.ofile
+	# 	enmap.write_map(args.ofile, m)
+	# else:
+        if True:
 		if verbose: print "Writing %s" % (args.ofile % i)
 		enmap.write_map(args.ofile % i, m)
+                if args.lensed:
+                        if verbose: print "Writing %s" % (kappaname % i)
+                        enmap.write_map(kappaname % i, kappa)
+
